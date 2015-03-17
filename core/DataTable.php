@@ -344,6 +344,11 @@ class DataTable implements DataTableInterface, \IteratorAggregate, \ArrayAccess
         }
     }
 
+    public function setLabelsHaveChanged()
+    {
+        $this->indexNotUpToDate = true;
+    }
+
     /**
      * @ignore
      * does not update the summary row!
@@ -611,7 +616,6 @@ class DataTable implements DataTableInterface, \IteratorAggregate, \ArrayAccess
      */
     public function getRowIdFromLabel($label)
     {
-        $this->rebuildIndexContinuously = true;
         if ($this->indexNotUpToDate) {
             $this->rebuildIndex();
         }
@@ -650,6 +654,8 @@ class DataTable implements DataTableInterface, \IteratorAggregate, \ArrayAccess
      */
     private function rebuildIndex()
     {
+        $this->rebuildIndexContinuously = true;
+
         foreach ($this->getRows() as $id => $row) {
             $label = $row->getColumn('label');
             if ($label !== false) {
