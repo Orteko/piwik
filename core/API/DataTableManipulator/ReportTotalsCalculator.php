@@ -188,6 +188,7 @@ class ReportTotalsCalculator extends DataTableManipulator
         $request['expanded']      = 0;
         $request['filter_limit']  = -1;
         $request['filter_offset'] = 0;
+        $request['filter_sort_column'] = '';
 
         $parametersToRemove = array('flat');
 
