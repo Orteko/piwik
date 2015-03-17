@@ -74,7 +74,6 @@ class Truncate extends BaseFilter
         }
 
         $this->addSummaryRow($table);
-        $table->queueFilter('ReplaceSummaryRowLabel', array($this->labelSummaryRow));
 
         if ($this->filterRecursive) {
             foreach ($table->getRows() as $row) {
@@ -94,6 +93,7 @@ class Truncate extends BaseFilter
             return;
         }
 
+        $table->queueFilter('ReplaceSummaryRowLabel', array($this->labelSummaryRow));
         $table->filter('Sort', array($this->columnToSortByBeforeTruncating, 'desc', $naturalSort = true, $recursiveSort = false));
 
         $rows   = array_values($table->getRows());
