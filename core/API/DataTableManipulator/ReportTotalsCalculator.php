@@ -69,48 +69,19 @@ class ReportTotalsCalculator extends DataTableManipulator
         $realMetricNames = array();
         foreach ($metricsToCalculate as $metricId) {
             $metricName = Metrics::getReadableColumnName($metricId);
-            $realMetricName = $this->hasDataTableMetric($firstLevelTable, $metricId, $metricName);
-            if (!empty($realMetricName)) {
-                $realMetricNames[$metricName] = $realMetricName;
-            }
+            $realMetricNames[$metricId] = $metricName;
         }
 
         foreach ($firstLevelTable->getRows() as $row) {
             $columns = $row->getColumns();
-            foreach ($realMetricNames as $metricName => $realMetricName) {
-                $totalValues = $this->sumColumnValueToTotal($columns, $metricName, $realMetricName, $totalValues);
+            foreach ($realMetricNames as $metricId => $metricName) {
+                $totalValues = $this->sumColumnValueToTotal($columns, $metricId, $metricName, $totalValues);
             }
         }
 
         $dataTable->setMetadata('totals', $totalValues);
 
         return $dataTable;
-    }
-
-    private function hasDataTableMetric(DataTable $dataTable, $metricId, $readableColumnName)
-    {
-        $firstRow = $dataTable->getFirstRow();
-
-        if (empty($firstRow)) {
-            return false;
-        }
-
-        $columnAlternatives = array(
-            $metricId,
-            $readableColumnName,
-            // TODO: this and below is a hack to get report totals to work correctly w/ MultiSites.getAll. can be corrected
-            //       when all metrics are described by Metadata classes & internal naming quirks are handled by core system.
-            'Goal_' . $readableColumnName,
-            'Actions_' . $readableColumnName
-        );
-
-        foreach ($columnAlternatives as $column) {
-            if ($firstRow->getColumn($column) !== false) {
-                return $column;
-            }
-        }
-
-        return false;
     }
 
     private function makeSureToWorkOnFirstLevelDataTable($table)
@@ -155,14 +126,32 @@ class ReportTotalsCalculator extends DataTableManipulator
         return $table;
     }
 
-    private function sumColumnValueToTotal($columns, $metricName, $realMetricId, $totalValues)
+    private function sumColumnValueToTotal($columns, $metricId, $metricName, $totalValues)
     {
         $value = false;
-        if (array_key_exists($realMetricId, $columns)) {
-            $value = $columns[$realMetricId];
+        if (array_key_exists($metricId, $columns)) {
+            $value = $columns[$metricId];
         }
 
-        if (false === $value) {
+        if ($value === false) {
+            // we do not add $metricId to $possibleMetricNames for a small performance improvement since in most cases
+            // $metricId should be present in $columns so we avoid this foreach loop
+            $possibleMetricNames = array(
+                $metricName,
+                // TODO: this and below is a hack to get report totals to work correctly w/ MultiSites.getAll. can be corrected
+                //       when all metrics are described by Metadata classes & internal naming quirks are handled by core system.
+                'Goal_' . $metricName,
+                'Actions_' . $metricName
+            );
+            foreach ($possibleMetricNames as $possibleMetricName) {
+                if (array_key_exists($possibleMetricName, $columns)) {
+                    $value = $columns[$possibleMetricName];
+                    break;
+                }
+            }
+        }
+
+        if ($value === false) {
 
             return $totalValues;
         }
@@ -188,7 +177,6 @@ class ReportTotalsCalculator extends DataTableManipulator
         $request['expanded']      = 0;
         $request['filter_limit']  = -1;
         $request['filter_offset'] = 0;
-        $request['filter_sort_column'] = '';
 
         $parametersToRemove = array('flat');
 
